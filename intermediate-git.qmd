@@ -1,0 +1,588 @@
+# Intermediate Git
+
+Key Topics:
+
+- Using Git Solo
+- Git's Data Model
+- Git Branching
+- Git Merging
+- Using GitHub as a Team
+
+## Using Git Solo
+
+There are two ways to initialize a Git repository: locally via `git init`, or by creating a repo on GitHub and cloning it.
+
+### Local Initialization
+
+From within a directory that you want to treat as a repo:
+
+```sh
+intermediate-git/$ git init
+Initialized empty Git repository in /Users/james/repos/intermediate-git/.git/
+```
+
+That's all it takes. The current directory you're in is now a git repository with 0 commits.
+
+It's a good idea to create a `.gitignore` file at this point:
+
+### `.gitignore`
+
+If you create your project via GitHub it'll create a `.gitignore` file for you. Otherwise, you'd create one yourself.
+
+This file should be a list of files/patterns that you'd like to exclude.
+
+For example:
+
+```
+*.pyc
+.vscode
+scraped_data/
+.DS_Store
+```
+
+This would avoid checking in .pyc files, your local .vscode settings, and the `scraped_data` directory.  MacOS makes .DS_Store files that you probably don't want to check in either.
+
+### Adding A Remote
+
+If you want to push your repo to GitHub, you'll need to add a remote:
+
+```sh
+$ git remote add origin git@github.com:jamesturk/git-workshop-example.git
+```
+
+### GitHub Repo First
+
+GitHub can provide reasonable defaults based on the language of your project as well, but don't feel like you need everything that they add, a lot of the files in their list are from editors/IDEs you aren't using.
+
+## Data Model
+
+Git is what we call a leaky abstraction. This means that it is sometimes necessary to understand how it works under the hood in order to use it effectively.
+
+If you read about Git or use some of the more advanced features you'll eventually see references to some key data structures:
+
+- Blobs
+- Trees
+- Commits
+- Tags
+
+Blobs are essentially the contents of a file at a given point in time.  Trees are a collection of blobs in a directory-like hierarchy.  We don't need to worry about these too much for what we're talking about today but I wanted to mention them.
+
+We do want to talk about commits however.
+
+You're familiar with making commits, but let's talk a bit more about what is actually stored:
+
+- Commit ID (a SHA-1 Hash)
+- Author information (name, email)
+- Committer information (name, email) [can be different from author, we won't worry about this]
+- Commit message
+- Timestamp
+- A reference to the tree at the time of the commit.
+- Parent(s) (zero or more)
+
+```{mermaid}
+graph BT;
+
+    A --> B;
+    B --> C;
+    C --> D;
+    C --> E;
+    A --> W;
+    W --> F;
+    D --> F;
+    E --> F;
+```
+
+(I'll draw git diagrams with the root at the bottom and the most recent commit at the top, which is what you'll usually see by convention.)
+
+Commits form a Directed Acyclic Graph (DAG).
+
+A is a **root commit**, because it has no parent.
+
+(Typically repos only have one root commit.)
+
+F is a **merge commit**, because it has more than one parent.
+
+## Branching
+
+The simplest Git repo would be one with a purely linear history:
+
+```{mermaid}
+
+graph BT;
+
+    A(initialize) --> B(add feature #1);
+    B --> C(add feature #2);
+    C --> D(add feature #3);
+```
+
+But let's say that we were considering an alternate way to implement our next feature.  We might instead create a new branch:
+
+```sh
+git branch new-feature
+```
+
+All that this has done is create a new pointer to the same commit that `main` was already pointing to.
+
+```sh
+$ git log
+commit 8ea904f (HEAD -> main, new-feature)
+Author: James
+Date:   Thu Apr 6 17:51:20 2023 -0500
+
+    second commit
+
+commit 908ee8c
+Author: James
+Date:   Thu Apr 6 17:48:12 2023 -0500
+
+    first commit
+```
+
+```{mermaid}
+graph BT;
+
+    A(first commit) --> B(second commit : main, new-feature);
+```
+
+Both `main` and `new-feature` are pointing to the same commit.
+
+This is a key concept in Git: branches are mutable labels that point to commits.
+
+So here's what happens when we make a new commit:
+
+```sh
+$ ...
+$ git commit -m "third commit"
+...
+$ git log
+  commit 1337c4a (HEAD -> main)
+  Author: James
+  Date:   Thu Apr 6 17:52:04 2023
+
+      third commit
+
+  commit 8ea904f (new-feature)
+  Author: James
+  Date:   Thu Apr 6 17:51:20 2023
+
+      second commit
+
+  commit 908ee8c
+  Author: James
+  Date:   Thu Apr 6 17:48:12 2023
+
+      first commit
+
+```
+
+```{mermaid}
+graph BT;
+
+    B --> C(third commit: main);
+    A(first commit) --> B(second commit : new-feature);
+```
+
+Notice that `main` moved forward, but `new-feature` was left behind.
+
+Whenever you `git commit`, the branch that you're currently on will move forward to point to the new commit.
+
+To actually use `new-feature`, we need to switch to it:
+
+```sh
+$ git switch new-feature
+```
+
+Now commits will move `new-feature` forward. So typically the workflow for starting a new branch looks like:
+
+```sh
+git branch new-branch
+git switch new-branch
+```
+
+### Aside: `git checkout`
+
+You will also see people use `git checkout -b` to create a new branch and switch to it in one step.
+
+```sh
+git checkout -b new-branch
+# same as
+git branch new-branch
+git checkout new-branch
+```
+
+`git checkout` is an older command, and can do a lot of different things.  Feel free to use it, but I prefer to use the newer commands because they are less overloaded with unrelated behavior.
+
+Finally, `git branch` without a branch name will list all of the branches in your repo.
+
+```sh
+$ git branch
+  main
+* new-feature
+  pr/11
+  pr/12
+  experiments
+```
+
+### Recap
+
+- Branches are (mutable) labels that point to (immutable) commits.
+- `git commit` moves the branch that you're currently on forward.
+- `git switch` changes which branch you're currently on.
+- `git branch <branchname>` creates a new branch.
+- `git branch` without a branch name will list all of the branches in your repo.
+
+## Merging
+
+Now that we can create branches, we can work on multiple features at once. Whether we're working alone or on a large team, we'll eventually want to combine our work.
+
+```{mermaid}
+graph BT;
+
+    A(initial commit : main)
+    A --> B(wireframe UI);
+    B --> C(add bootstrap CSS: ui);
+    C --> D(add profile page: profile-page);
+    C --> E(add login page);
+    E --> F(fix login page bug: login-page)
+    A --> W(backend prototype, very slow : backend);
+    W --> X(add benchmarks);
+    X --> Y1(optimized via rpython : try-pypy);
+    X --> Y2(wrote C version: try-c);
+    X --> Y3(rewritten in Rust: try-rust);
+```
+
+We have a lot of different branches here:
+
+* main
+    * ui
+        * profile-page
+        * login-page
+    * backend
+        * try-pypy
+        * try-c
+        * try-rust
+
+Typically, we'll see branches merge back to their parent, so we can consider the `ui` and `backend` branches separately. Let's look at UI for now:
+
+```{mermaid}
+graph BT;
+
+    A(initial commit : main)
+    A --> B(wireframe UI);
+    B --> C(add bootstrap CSS: ui);
+    C --> D(add profile page: profile-page);
+    C --> E(add login page);
+    E --> F(fix login page bug: login-page)
+```
+
+### Fast-forward merge
+
+Let's say that we've finished the login page, and we want to merge it back into `ui`. 
+
+We can do that with `git merge`:
+
+Whenever we're modifying a branch, we want to switch to it first. So just as we do before a `git commit`, we switch to the destination `ui` branch.
+
+Then we run `git merge login-page`.
+
+```sh
+git switch ui
+git merge login-page
+Updating e6512d6..d45dee9
+Fast-forward
+ README.md | 3 ++-
+ ...
+```
+
+You'll see in this example, Git did a "fast-forward" merge.  This means that Git was able to move the `ui` branch forward to the same commit that `login-page` was already pointing to.
+
+This was possible because no new commits were created on `ui` since we created `login-page`.
+
+Our updated commit graph:
+
+```{mermaid}
+graph BT;
+
+    A(initial commit : main)
+    A --> B(wireframe UI);
+    B --> C(add bootstrap CSS);
+    C --> D(add profile page: profile-page);
+    C --> E(add login page);
+    E --> F(fix login page bug: login-page, ui)
+```
+
+*(The UI label has moved forward to point to the same commit as `login-page`.)*
+
+### Deleting Branches
+
+At this point, we'd likely delete the `login-page` branch, since it's no longer needed.
+
+```sh
+git branch -d login-page
+```
+
+All that this command does is delete the label, the underlying commits will never be deleted.
+
+If you try to delete a branch that isn't yet merged, Git will warn you and prevent you from doing this.  If you want to do it anyway, you can use `git branch -D`.
+
+(Deleting a branch with unmerged commits makes those commits harder to find, but still doesn't actually remove the commits.)
+
+### Clean Merges
+
+Let's continue, and say that it is now time to merge in the profile page.
+
+```sh
+git switch ui
+git merge profile-page
+```
+
+Let's say `profile-page` only touched the `profile.html` file, and `login-page` only touched `login.html`.  In this case, Git will be able to automatically merge the two branches together.
+
+```sh
+Auto-merging profile.html
+Merge made by the 'recursive' strategy.
+ profile.html | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+```
+
+Git will automatically create a new commit with two parents, one for each branch.
+
+```{mermaid}
+graph BT;
+
+    A(initial commit : main)
+    A --> B(wireframe UI);
+    B --> C(add bootstrap CSS);
+    C --> D(add profile page: profile-page);
+    C --> E(add login page);
+    E --> F(fix login page bug)
+    F --> G(merge commit: ui)
+    D --> G
+```
+
+### Merge Conflicts
+
+But things aren't always so clean of course, maybe both branches also modified a base_template.html file instead. In this case, Git will be unable to automatically merge the two branches together.
+
+```sh
+Auto-merging base_template.html
+CONFLICT (content): Merge conflict in base_template.html
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+At this point, your repository will be in a "merge conflict" state.  Git will have modified the file to show you the conflicts, in this case two different CSS files were added to the HTML:
+
+```html
+<title>My Website</title>
+<head>
+<<< HEAD
+<link rel="stylesheet" href="css/login.css">
+=======
+<link rel="stylesheet" href="css/profile.css">
+>>> profile-page
+</head>
+<body>
+```
+
+The `<<< HEAD` and `>>> profile-page` lines show you the two different versions of the file split by ======.
+
+The portion between <<< HEAD and ==== is the version of the file that was on the current branch, in this case `ui`.
+
+The portion between ==== and >>> profile-page is the version of the file that was on the branch we're merging in, in this case `profile-page`.
+
+We probably want both of these lines, so we'll edit the file to look like this:
+
+```html
+<title>My Website</title>
+<head>
+<link rel="stylesheet" href="css/login.css">
+<link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+```
+
+When we've made these changes, we add and commit our changes just like we usually would.
+The commit that we create from this state will have two parents, just like we saw above.
+
+#### Aborting a Merge
+
+Sometimes you attempt a merge and discover the conflict will be hard to resolve.
+
+In this case, you can abort the merge with `git merge --abort`.
+
+This will rewind your repository to the state it was in before you tried to merge, so you can consider other approaches.
+
+#### Merging and Testing
+
+Of course, this is a trivial example, and in a real merge conflict it can be necessary to figure out how the changed lines should be combined.
+
+If you're using VS Code or another editor with Git integration, you can use the editor to resolve the conflict.  Otherwise, you'll need to edit the file manually.
+
+Also, note that merge conflicts only occur when the same section of a file was edited in both branches.
+
+If the edit is in completely different parts of the file, `git` will merge them automatically by default. That doesn't mean that the code works, as you may find that a change to a function in a different file (or part of the same file) changes how the code works.
+
+This is another reason that tests are so important, as running the tests after a merge can provide some peace of mind that the code still works as expected if your test suite is comprehensive.
+
+## Remote Branches
+
+So far, we've been working with branches that only exist on our local machine. 
+To share branches with other developers, we need to push them to a remote repository.
+
+### Pushing
+
+To work with remote branches, you'll need a `remote` set up, which we saw in Part 1.  (If you created/cloned the repo from GitHub a remote already exists).
+
+To push a branch to GitHub:
+
+```sh
+git push origin ui   # push the ui branch to the origin remote
+```
+
+If you'd like to be able to just type `git push` to push the current branch, you can set up a default remote branch:
+
+```sh
+git push -u origin ui   # push the ui branch to the origin remote, and set it as the default
+```
+
+From then on, you can just type `git push` to push the ui branch to the remote.
+
+### Fetch & Pull
+
+If you want to pull a remote branch that exists on the remote but not locally (e.g. to check out a teammates work), you can use `git fetch`:
+
+```sh
+git fetch origin login-page   # fetch the login-page branch from the origin remote
+```
+
+This will create a local branch called `origin/login-page` that you can check out & work with as usual.
+
+If your intent is to merge all of the changes from the remote branch into your current branch, you can use `git pull`:
+
+```sh
+git pull origin login-page   # fetch the login-page branch from the origin remote, and merge it into the current branch
+```
+
+### Deleting Remote Branches
+
+If you want to delete a remote branch, you can use `git push` with the `--delete` flag:
+
+```sh
+git push origin --delete login-page   # delete the login-page branch from the origin remote
+```
+
+(You can also do this from GitHub's web interface, which is handy if you're using Pull Requests.)
+
+## Working in Teams
+
+So now that you know how to work with branches, how do you use them in a team?
+
+There's no one right answer, and most teams have adopted a branching strategy that works for them. If you're joining an existing project or team, follow their lead.
+
+If you're working on a team project, or trying to introduce some order to your own projects, here are some common strategies:
+
+### Trunk Based Development
+
+This is the simplest strategy, and can be used for small projects or working independently.
+
+One single branch (e.g. `main`) is used for all development.  All commits are made directly to this branch.
+
+### "GitHub Flow"
+
+A model that works well for solo work or small to mid-sized teams is the "GitHub Flow" model.
+
+<https://docs.github.com/en/get-started/quickstart/github-flow>
+
+In this model, there is only one long-lived branch, usually called `main`.  (You will also see `master` used, as it was the default until a few years ago.)
+
+**All** work is done on feature branches, which are merged into `main` when they are ready.
+
+This means, you never commit directly to main, the only commits on main are merges from feature branches.
+
+General workflow:
+
+* Create a feature branch aimed at tackling a specific problem
+* Make commits on the feature branch as needed
+* When the feature is ready, open a pull request.  This lets the team review the code and discuss it.
+* Once the pull request is approved, merge it into main.
+* Delete the feature branch.
+
+### Git Flow
+
+Similar to `GitHub` flow, but with two long-lived branches, `main` and `develop`.
+
+All work is done on feature branches, which are merged into `develop` when they are ready.
+
+When `develop` is ready to be released, it is merged into `main`.
+
+This means `develop` repeatedly gets merges from `main`, and `main` only gets merges from `develop`.
+
+![Original Git Flow Diagram](https://nvie.com/img/git-model%402x.png)
+
+### Branches off Branches?
+
+In our earlier example we branched off of the `ui` branch to create the `profile-page` branch.
+
+This is a pattern that emerges when teams are sharing a single repository, but working on completely different features.
+
+In general, the longer a branch lives the harder it becomes to merge back to main.
+A strategy like the one used to demonstrate some of the features should only be used if the long-lived branches are very unlikely to conflict, and even then integration can
+become difficult.
+
+### Demo Pull Request
+
+### Pull Request Merge Strategies
+
+* Merge - Creates a merge commit.
+* Squash and Merge - Combines all branch commits into one, and creates a merge commit.  (Lets you commit as many times as you want on feature branch, and then combine them into one commit on main.)
+* Rebase and Merge - Rewrites the history of the feature branch to be based on the current state of main, and then creates a merge commit. 
+
+<https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges>
+
+## Conclusion / Misc.
+
+Git Book Chapter 3 <https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell>
+
+### Rebasing
+
+Rebasing is another way to combine two branches together. Since we only had an hour today I didn't get into it, but some teams swear by it.
+
+Instead of creating a merge commit, a rebase will take the commits from one branch and replay them on top of the other branch.
+
+This allows you to keep a linear history, but is riskier than merging since it essentially rewrites history so it is possible
+to lose commits and known working states.
+
+We saw that when merging, Git will create a new commit with two parents, one for each branch.
+
+Some people prefer to keep their commit history linear, and avoid merge commits.
+
+In a rebase, Git will take the commits from one branch and replay them on top of the other branch.
+
+
+### Good Commit Messages
+
+A good commit message should:
+
+* Have a first line that is a summary of the change (<50 characters)
+* Have a blank line after the summary
+* Have a more detailed description of the change as needed
+* Be written in the imperative (e.g. "Add" instead of "Added")
+* Explain why the change was made, not what the change was (since that will be in the diff)
+
+### Cool GitHub Tricks
+
+* Mention an issue in a commit message and it'll be linked.  (e.g. "Fixes #123" will close that issue when the commit is merged to main.)
+* [GitHub CLI](https://cli.github.com/) - Command line interface for GitHub, lets you do things like create and review pull requests from the command line.
+
+### Tagging
+
+Tags are a way to mark a specific commit as important. A common use is to tag releases. (e.g. v0.6.2 or 2023-04-05)
+
+Tags are distinct from branches in that they do not move when new commits are added, but are similar in that they are just a pointer to a commit.
+
+<https://git-scm.com/book/en/v2/Git-Basics-Tagging>
+
+
+## Next Time: Modern Python
+
+April 21st
