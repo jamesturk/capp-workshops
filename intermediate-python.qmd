@@ -1,0 +1,392 @@
+# Intermediate Python
+
+Today we're going to be talking about some features of Python that might be considered "ergonomic."
+
+You can, and have, gotten by without using these as they aren't fundamental in the way that loops, functions, and classes are.
+
+Learning these features gives you additional ways to solve problems, which can be more efficient or elegant than alternatives.
+
+
+Some topics that fall into this category are:
+
+* Comprehensions (which you've already seen)
+* Decorators (which you've seen a little bit of)
+* Exceptions & Context Managers
+* Generators
+* Type Hints
+
+## Exceptions & Context Managers
+
+### Motivation
+
+No matter how good your code is, there's always going to be a chance that something goes wrong.
+
+A common example is a file not being available when you try to open it. (Perhaps it is missing or you don't have permission to access it.)
+
+You could imagine code like this:
+
+```python
+file = open("file.txt")
+file.write("Hello, world!\n")
+file.write("Second Write")
+file.close()
+```
+
+Let's say every time you call a method that potentially fails, you need to check if it succeeded before using the result.
+
+```python
+# this code does not work, demo purposes
+file = open("file.txt")
+if file.is_open():
+    success = file.write("Hello, world!\n")
+    if success:
+        success = file.write("Second Write")
+
+    if not success:
+        # handle error
+
+    # close file no matter what
+    file.close()
+```
+
+This can get very messy very quickly, especially if there are ways to recover from the error.
+
+(Unrecoverable errors are easier to handle, you can just let the program crash, optionally with a custom message.)
+
+### Exceptions Syntax Review
+
+In Python, we can use exceptions as an alternate control flow path.
+
+The two key pieces of syntax are `raise`, and `try-except`.
+
+#### `raise` & Exception Types
+
+When a `raise` statement is encountered, typical execution is stopped and the program jumps to the nearest matching `except` block.
+
+```python
+raise ExceptionType("message")
+```
+
+An exception can be any class that inherits from `BaseException`, common built in exceptions are:
+
+* `Exception`
+* `ValueError`
+* `TypeError`
+* `KeyError`
+* `IndexError`
+* `FileNotFoundError`
+* `NotImplementedError`
+
+You can also create your own by subclassing `Exception` or any other relevant type.
+
+```python
+class TooManyTokens(Exception):
+    pass
+
+...
+
+if len(tokens) > MAX_TOKENS:
+    raise TooManyTokens(f"Expected at most {MAX_TOKENS} tokens, got {len(tokens)}")
+```
+
+#### `try-except`
+
+```python
+try:
+    # code that might raise an exception
+except ExceptionType:
+    # code to run if an exception is raised
+except OtherExceptionType as e:
+    # code to run if an exception is raised
+    # in this example, e will be the exception object so you can
+    # use it/log it/etc.
+else:
+    # code to run if no exception is raised
+finally:
+    # code to run no matter what
+```
+
+* only one `except` block will be run, the first one that matches the exception type
+* an `except` block can match multiple exception types by providing a tuple of types or by using a base class
+* `else` and `finally` are not required and often omitted, but can be useful.
+
+Our file handling example can be rewritten to use exceptions:
+
+```python
+try:
+    file = open("file.txt")
+    file.write("Hello, world!\n")
+    file.write("Second Write")
+except (OSError, IOError) as e:
+    # handle error
+finally:
+    file.close()
+```
+
+Now if any of these three lines raise an exception, the file will still be closed.
+
+
+### Context Managers
+
+Context managers are a way to automatically run some code when entering and exiting a block of code.
+
+They are commonly used to manage resources like files, locks, and database connections and can be thought of as related to exceptions in that they provide an alternate way to work with errors.
+
+If a Python object has `__enter__` and `__exit__` methods, it can be used as a context manager.
+
+Rewriting our file handling example to use a context manager:
+
+`__enter__` is called when entering the `with` block, and `__exit__` is called when exiting the block.
+
+These are called no matter what, so if an exception is raised, `__exit__` will still be called.
+
+If you have no custom code you need to run, just want to make sure something is closed, you could rewrite the above example as
+
+```python
+with open("file.txt") as file:
+    file.write("Hello, world!\n")
+    file.write("Second Write")
+```
+
+Any exception raised in the `with` block will be caught and passed to `__exit__`.  `file's` `__exit__` method will then close the file.
+
+Other common uses of context managers are:
+
+* `with db_connection:` - Ensures database connection is closed when the block exits.
+* `with db.transaction.atomic():` - Ensure that a block of code is run within a database transaction so changes can be rolled back if an exception is raised.
+
+### Writing Your Own Context Managers
+
+As mentioned, if a Python object has `__enter__` and `__exit__` methods, it can be used as a context manager.
+
+You can write your own context managers by implementing these methods.
+
+```{python}
+class MyContextManager:
+    def __enter__(self):
+        print("entering block")
+        # code to run when entering the block
+
+        # return value is assigned to the variable in the `as` clause
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # code to run when exiting the block
+        # exc_type, exc_value, and traceback are the exception info
+        # if an exception was raised, otherwise they are None
+        if exc_type is not None:
+            print("exception was raised")
+        else:
+            print("exiting normally")
+
+        # return True to suppress the exception propagating
+        return True
+
+
+```
+
+
+```{python}
+with MyContextManager() as context:
+    print("inside block")
+```
+
+```{python}
+with MyContextManager() as context:
+    7 / 0
+```
+
+
+### Tips / Further Reading
+
+* Try to keep your `try` blocks as small as possible, only including the code that might raise an exception.
+* Catch the most specific exception possible, and only catch exceptions that you can handle.
+* Avoid catching `Exception`, or omitting the exception type entirely. This will catch all exception, which can lead to hard-to-find bugs.
+
+* [Python Docs - Errors and Exceptions](https://docs.python.org/3/tutorial/errors.html)
+* [Python Docs - Context Managers](https://docs.python.org/3/reference/datamodel.html#context-managers)
+* [Python Docs - with Statement](https://docs.python.org/3/reference/compound_stmts.html#the-with-statement)
+
+## Generators
+
+A feature we steer clear of in 121/122 is generators and iterators. These are an incredibly powerful tool for writing efficient code, especially when dealing with large amounts of data.
+
+### Iterables
+
+Recall that Python objects use dunder methods to implement most of their functionality.
+
+You may recall that when implementing a class you can define `__getitem__` and `__setitem__` to make your class subscriptable.
+
+```{python}
+ll = [1, 2, 3]
+print(ll[0])
+print(ll.__getitem__(0))  # you wouldn't write this, but it's the same thing
+
+ll[0] = 4
+ll.__setitem__(0, 4)  # you wouldn't write this, but it's the same thing
+```
+
+A `for` loop is similarly syntactic sugar for calling two other methods: `__iter__` and `__next__`.
+
+```{python}
+ll = [1, 2, 3, 4]
+for item in ll:
+    print(item)
+```
+
+```{python}
+ll = [1, 2, 3, 4]
+iterator = ll.__iter__()
+while True:
+    try:
+        item = iterator.__next__()
+    except StopIteration:
+        break
+    print(item)
+
+
+```
+
+* `__iter__` returns an iterator object, a special intermediary object that tracks the current position in the iterable.
+* `__next__` returns the next item in the iterable, and raises `StopIteration` when there are no more items.
+
+You could write your own classes that implement these methods to make them iterable.  But today we'll look at another way to make iterables: generators.
+
+### Motivation
+
+Let's say that you want to write a function that will return many values, but you only intend for one to be used at a time.
+
+
+
+```{python}
+def permute(word):
+    if len(word) == 1:
+        return [word]
+    else:
+        result = []
+        for i in range(len(word)):
+            for perm in permute(word[:i] + word[i + 1 :]):
+                result.append(word[i] + perm)
+        return result
+
+
+```
+
+```{python}
+permute("abc")
+```
+
+Great, but the size of the returned list will be $n!$, where $n$ is the length of the string.
+
+```{python}
+results = permute("too long")
+print(len(results))
+```
+
+### Generators
+
+Often, we only need one item at a time, and we don't want to store all of the results in memory.
+
+This is the case with a lot of data processing tasks, where we might have millions of records, but only need to process one at a time.
+
+Generators are special functions that return an iterator.
+
+Let's take a look at `range`:
+
+```{python}
+
+
+def f(x):
+    # contrived stop condition, perhaps you're searching for a value that fits some criteria:w
+    return x - 7
+
+
+for x in range(10000000):
+    print(x)
+    if f(x) == 0:  # commonly we don't actually need all of the values
+        break
+
+
+```
+
+If `range` returned a list, it would need to allocate a list of size $10^7$ in memory, which would be very slow and use a lot of memory.
+
+Instead range looks something like this:
+
+```{python}
+def range(n):
+    i = 0
+    while i < n:
+        yield i
+        i += 1
+
+
+```
+
+`yield` is a special keyword that returns a value from the function, but doesn't exit the function.
+
+When the function is called again, it will continue from where it left off.
+
+Let's rewrite `permute` as a generator:
+
+```{python}
+def ipermute(word):
+    if len(word) == 1:
+        yield word
+    else:
+        for i in range(len(word)):
+            for perm in permute(word[:i] + word[i + 1 :]):
+                yield word[i] + perm
+```
+
+```{python}
+for perm in ipermute("abc"):
+    print(perm)
+```
+
+```{python}
+
+### Generator Expressions
+
+You can use generator expressions to create generators without having to write a function.
+
+```{python}
+squares = (x**2 for x in range(1000000))
+```
+
+This looks like a list comprehension, but has parentheses instead of brackets.
+
+It creates a generator that will return the squares of the numbers from 0 to 999999.
+
+
+### `itertools`
+
+The `itertools` module contains many useful functions for working with iterators, all of which are implemented as generators.
+
+Useful functions include:
+
+* `itertools.permutations` - permutations of an iterable
+* `itertools.combinations` - combinations without replacement
+* `itertools.product` - cartesian product of multiple iterables (like nested for loops)
+* `itertools.chain` - concatenate iterators
+* `itertools.islice` - slice an iterator the way you would a list
+* `itertools.groupby` - group items by a key
+* `itertools.tee` - create multiple iterators from one
+
+
+## Conclusion
+
+A common symptom of the "intermediate" stage of knowing a language is that people tend to overuse features that are available to them.
+
+Please keep in mind that there's nothing inherently better about choosing these over the alternatives, strive to make your code readable and maintainable above all else.
+
+### Typing
+
+### More Python
+
+* Functional Programming - decorators, `functools`
+* Metaclasses
+* Async I/O - `asyncio`, `async/await`
+* Bridging Python to other languages - C API, Cython, CFFI, PyO3
+
+Next Time: Interactive Debugging Lab
