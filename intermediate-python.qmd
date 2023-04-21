@@ -374,13 +374,148 @@ Useful functions include:
 * `itertools.tee` - create multiple iterators from one
 
 
+## Typing
+
+The biggest change to Python in recent years is the addition of type annotations.
+
+### Motivation
+
+Python is a dynamically typed language, which means that the type of a variable is determined at runtime.
+
+It also means the type can change:
+
+```python
+x = 1
+x = "hello"  # no error
+```
+
+This is a common source of bugs, since it can be difficult to keep track of what type a variable is.
+
+```python
+x = f() # f used to return an int, but now returns a string
+```
+
+### Static Typing
+
+Many languages require variable definitions and function signatures to include type annotations.
+
+```c
+// C
+int f(int x) {
+    return x + 1;
+}
+```
+
+```rust
+// Rust
+fn f(x: i32) -> i32 {
+    x + 1
+}
+```
+
+This is called static typing, because the type is checked at compile time.
+
+### Type Annotations
+
+Python 3.5 introduced type annotations, which are optional type hints that can be added to your code.
+
+```python
+def f(x: int) -> int:
+    return x + 1
+```
+
+The syntax is that after a variable definition (typically a function parameter) you can add a colon and the type.
+
+You can also add a return type annotation after the closing parenthesis of the function signature with the `-> int` syntax.
+
+### Types
+
+You can annotate with any of the built-in types:
+
+* `int`
+* `float`
+* `str`
+* `bool`
+* `None`
+* etc.
+
+The compound types (features added in Python 3.7-3.9):
+
+* `list`
+* `dict`
+* `set`
+* `tuple`
+
+These allow for annotating the type of the elements in the container:
+
+```python
+def f(x: list[int]) -> dict[str, int]:
+    return {str(i): i for i in x}
+```
+
+There are a lot of helper types in the `typing` module:
+
+* `typing.Any` - any type
+* `typing.Optional[int]` - an `int` or `None`
+* `typing.Union[int, str]` - an `int` or a `str`
+* `typing.Callable[[int, str], bool]` - a function that takes an `int` and a `str` and returns a `bool`
+
+You can also union types together with `|` (as of Python 3.10):
+
+```python
+def f(x: int | str) -> int | str:
+    return x
+```
+
+This also works as an alternate syntax for `Optional`:
+
+```python
+def f(x: int | None) -> int | None:
+    return x
+```
+
+### Type Checking
+
+One thing to be aware of: these don't do anything! They're just hints for the programmer.
+
+```python
+# bad type annotations
+def f(x: list) -> str:
+    return {"a": 1}
+
+f(27.5) 
+```
+
+Every type annotation is wrong in the above example, but Python will not complain at "compile" time nor at runtime.
+
+If you want to check your types, you can use a tool like `mypy`:
+
+https://mypy-lang.org/ 
+
+Running `mypy` on the above code will give you output like:
+
+```python
+$ mypy test.py
+test.py:3: error: Incompatible return value type (got "Dict[str, int]", expected "str")
+test.py:5: error: Argument 1 to "f" has incompatible type "float"; expected "list"
+Found 2 errors in 1 file (checked 1 source file)
+```
+
+### More on Types
+
+You'll definitely encounter type annotations in library documentation, and in more modern codebases.
+
+Norms around their usage are evolving, but it's worth getting into the habit of using them. It can make your code more clear and easier to maintain. It can help you find bugs before they happen or more easily reason about expected behavior in an unfamiliar codebase.
+
+More on `typing`: https://docs.python.org/3/library/typing.html
+
+If you're using VSCode's Python extension, it integrates nicely with type extensions and can be configured to warn you about type errors and optionally run tools like `mypy` to check your types.
+
 ## Conclusion
 
 A common symptom of the "intermediate" stage of knowing a language is that people tend to overuse features that are available to them.
 
 Please keep in mind that there's nothing inherently better about choosing these over the alternatives, strive to make your code readable and maintainable above all else.
-
-### Typing
 
 ### More Python
 
@@ -389,4 +524,6 @@ Please keep in mind that there's nothing inherently better about choosing these 
 * Async I/O - `asyncio`, `async/await`
 * Bridging Python to other languages - C API, Cython, CFFI, PyO3
 
-Next Time: Interactive Debugging Lab
+### Next Time: Interactive Debugging Lab
+
+I'll be sending out some setup instructions in advance, since I'd like the next talk to be more interactive.
