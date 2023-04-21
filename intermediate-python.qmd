@@ -32,7 +32,18 @@ file.write("Second Write")
 file.close()
 ```
 
-Let's say every time you call a method that potentially fails, you need to check if it succeeded before using the result.
+If you're worried about `open` failing you might end up with code like this:
+
+```python
+file = open("file.txt")
+# check if file is open (not a real method, just an example)
+if file.is_open():
+    file.write("Hello, world!\n")
+    file.write("Second Write")
+    file.close()
+```
+
+But what if other methods fail? If we're writing over a network, the disk is full, or the file is locked by another process?
 
 ```python
 # this code does not work, demo purposes
@@ -49,13 +60,12 @@ if file.is_open():
     file.close()
 ```
 
-This can get very messy very quickly, especially if there are ways to recover from the error.
-
-(Unrecoverable errors are easier to handle, you can just let the program crash, optionally with a custom message.)
+This can get very messy very quickly.
 
 ### Exceptions Syntax Review
 
 In Python, we can use exceptions as an alternate control flow path.
+What this means is that instead of executing code sequentially, we can jump to a different part of the program if an exception is raised.
 
 The two key pieces of syntax are `raise`, and `try-except`.
 
@@ -201,7 +211,7 @@ with MyContextManager() as context:
 
 * Try to keep your `try` blocks as small as possible, only including the code that might raise an exception.
 * Catch the most specific exception possible, and only catch exceptions that you can handle.
-* Avoid catching `Exception`, or omitting the exception type entirely. This will catch all exception, which can lead to hard-to-find bugs.
+* Avoid catching `Exception`, or omitting the exception type entirely. This will catch all exceptions, which can lead to hard-to-find bugs.
 
 * [Python Docs - Errors and Exceptions](https://docs.python.org/3/tutorial/errors.html)
 * [Python Docs - Context Managers](https://docs.python.org/3/reference/datamodel.html#context-managers)
@@ -209,7 +219,9 @@ with MyContextManager() as context:
 
 ## Generators
 
-A feature we steer clear of in 121/122 is generators and iterators. These are an incredibly powerful tool for writing efficient code, especially when dealing with large amounts of data.
+Generators are a special type of function that can be re-entered.
+
+An incredibly powerful tool for writing efficient code, especially when dealing with large amounts of data.
 
 ### Iterables
 
@@ -252,10 +264,9 @@ while True:
 
 You could write your own classes that implement these methods to make them iterable.  But today we'll look at another way to make iterables: generators.
 
-### Motivation
+### Motivation for Generators
 
 Let's say that you want to write a function that will return many values, but you only intend for one to be used at a time.
-
 
 
 ```{python}
@@ -278,6 +289,8 @@ permute("abc")
 
 Great, but the size of the returned list will be $n!$, where $n$ is the length of the string.
 
+It's also possible we're searching for a particular permutation, so we won't actually need all of the results & it'd be nice to stop early.
+
 ```{python}
 results = permute("too long")
 print(len(results))
@@ -296,24 +309,27 @@ Let's take a look at `range`:
 ```{python}
 
 
-def f(x):
+def stop_cond(x):
     # contrived stop condition, perhaps you're searching for a value that fits some criteria:w
-    return x - 7
+    return x == 17
 
 
-for x in range(10000000):
+for x in range(10_000_000):
     print(x)
-    if f(x) == 0:  # commonly we don't actually need all of the values
+    # we don't actually need all of the values
+    if stop_cond(x):
+        print("found it!")
         break
 
 
 ```
 
-If `range` returned a list, it would need to allocate a list of size $10^7$ in memory, which would be very slow and use a lot of memory.
+If `range` returned a list, it would need to allocate a large list, which is both slower and more memory intensive.
 
-Instead range looks something like this:
+Instead range's implementation looks something like this:
 
 ```{python}
+# simplified form with one parameter
 def range(n):
     i = 0
     while i < n:
@@ -323,7 +339,7 @@ def range(n):
 
 ```
 
-`yield` is a special keyword that returns a value from the function, but doesn't exit the function.
+`yield` is a special keyword that returns a value from the function, but doesn't exit the function the way `return` does.
 
 When the function is called again, it will continue from where it left off.
 
@@ -418,15 +434,17 @@ This is called static typing, because the type is checked at compile time.
 ### Type Annotations
 
 Python 3.5 introduced type annotations, which are optional type hints that can be added to your code.
+Evey version of Python since 3.5 has added new features to the type system, but as of 3.10 many of the rough edges have been smoothed out.
 
 ```python
 def f(x: int) -> int:
     return x + 1
 ```
 
-The syntax is that after a variable definition (typically a function parameter) you can add a colon and the type.
+Two new pieces of syntax:
 
-You can also add a return type annotation after the closing parenthesis of the function signature with the `-> int` syntax.
+* After a variable definition (typically a function parameter) you can add a colon and the type.
+* Return type annotations can be placed after the closing parenthesis of the function signature with the `-> int` syntax.
 
 ### Types
 
@@ -453,7 +471,12 @@ def f(x: list[int]) -> dict[str, int]:
     return {str(i): i for i in x}
 ```
 
-There are a lot of helper types in the `typing` module:
+* `list[int]` - a list of `int`s
+* `dict[str, int]` - a dictionary with `str` keys and `int` values
+* `tuple[int, str]` - a 2-tuple with an `int` and a `str`
+* `set[tuple[int, int, int]]` - set of 3-tuples of ints
+
+And finally, there are a lot of helper types in the `typing` module:
 
 * `typing.Any` - any type
 * `typing.Optional[int]` - an `int` or `None`
@@ -500,6 +523,29 @@ test.py:3: error: Incompatible return value type (got "Dict[str, int]", expected
 test.py:5: error: Argument 1 to "f" has incompatible type "float"; expected "list"
 Found 2 errors in 1 file (checked 1 source file)
 ```
+
+### Runtime Type Checking
+
+Some libraries, such as the built in `dataclasses` module, `pydantic`, `FastAPI`, and `typer` are starting to use type annotations for runtime type checking.
+
+```{python}
+from pydantic import BaseModel
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+
+# these are type-checked
+user = User(id=1, name="Sarah Connor", email="sarah@hotmail.com")
+```
+
+```{python}
+# note: id will be coerced to string since types are compatible
+user = User(id=1, name="Sarah Connor", email=None)
+```
+
+This allows you to catch errors earlier, and can result in less boilerplate code.
 
 ### More on Types
 
