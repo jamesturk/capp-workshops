@@ -27,4 +27,6 @@ def main():
     if args.c:
         print(len(text))
 
-    pass
+
+if __name__ == "__main__":
+    main()

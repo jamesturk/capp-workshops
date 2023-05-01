@@ -114,7 +114,7 @@ To use it, you'll need to add a `launch.json` file to your project.  This file t
 
 You can create a `launch.json` file by clicking on the debug icon in the sidebar and then clicking the gear icon to create a new launch configuration.
 
-![Create launch.json](images/create-launch-json.png)
+![Create launch.json](create-launch-json.png)
 
 This will create a `launch.json` file in your `.vscode` directory.  You can then edit this file to configure your debugger.
 
@@ -130,8 +130,10 @@ Here's an example `launch.json` file:
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": true
         }
     ]
 }
 ```
+
+#### VSCode Debugger Demo
