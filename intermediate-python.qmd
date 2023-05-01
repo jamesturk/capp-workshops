@@ -541,8 +541,11 @@ user = User(id=1, name="Sarah Connor", email="sarah@hotmail.com")
 ```
 
 ```{python}
-# note: id will be coerced to string since types are compatible
-user = User(id=1, name="Sarah Connor", email=None)
+try:
+    # note: id will be coerced to string since types are compatible
+    user = User(id=1, name="Sarah Connor", email=None)
+except Exception as e:
+    print(e)
 ```
 
 This allows you to catch errors earlier, and can result in less boilerplate code.
