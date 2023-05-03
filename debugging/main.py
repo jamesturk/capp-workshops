@@ -1,59 +1,46 @@
 #!/usr/bin/env python3
 import argparse
-from collections import Counter
+from statistics import mean
+from weather import get_weather_json
 
 
-def scan_text(text):
-    """
-    Generate summary statistics for the given text.
+def print_forecast(weather):
+    print("Forecast:")
+    for day in weather["forecast"]:
+        print(f"{day['date']}: {day['description']}")
+        print(f"  Temp: {day['temperature_f']}F")
+        print(f"  Precipitation: {day['precipitation']}")
+        print(f"  Humidity: {day['humidity']}")
 
-    Returns a dictionary with the following keys:
-      * most_common_word: the most common word in the text
-      * total_chars: the total number of characters in the text
-      * total_words: the total number of words in the text
-      * total_lines: the total number of lines in the text
-    """
-    counts = Counter()
-    total_chars = 0
-    total_words = 0
-    total_lines = 0
-    for word in text.split():
-        counts[word] += 1
-        total_chars += len(word)
-        total_words += 1
-        if "\n" in word:
-            total_lines += 1
 
-    return {
-        "most_common_word": counts.most_common(1)[0][0],
-        "most_common_count": counts.most_common(1)[0][1],
-        "chars": total_chars,
-        "words": total_chars,
-        "lines": total_lines,
-    }
+def print_summary(weather):
+    forecast = weather["forecast"]
+    avg_temp = mean([day["temperature_f"] for day in forecast])
+    # count days with chance of rain > 10%
+    precip_days = len([day for day in forecast if day["precipitation"] > 10])
+
+    print(f"The average temperature will be {avg_temp}F.")
+    print(f"There will be {precip_days} days with a chance of rain.")
+
+
+def print_current(weather):
+    print("Current weather:")
+    print(f"  Temp: {weather['current']['temperature_f']}F")
+    print(f"  Precipitation: {weather['current']['precipitation']}")
+    print(f"  Humidity: {weather['current']['humidity']}")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", nargs="?")
+    parser.add_argument("city", help="the city to get the weather for")
     args = parser.parse_args()
-
-    if args.file:
-        with open(args.file) as f:
-            text = f.read()
+    weather = get_weather_json(args.city)
+    if weather:
+        print_current(weather)
+        print_forecast(weather)
+        print_summary(weather)
     else:
-        text = input()
-
-    stats = scan_text(text)
-
-    print(
-        "Most common word: {} ({})".format(
-            stats["most_common_word"], stats["most_common_count"]
-        )
-    )
-    print("Total chars:      {}".format(stats["chars"]))
-    print("Total words:      {}".format(stats["words"]))
-    print("Total lines:      {}".format(stats["lines"]))
+        print(f"Could not get weather for {args.city}")
 
 
 if __name__ == "__main__":
