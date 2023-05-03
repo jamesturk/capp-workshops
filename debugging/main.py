@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import argparse
 from statistics import mean
 from weather import get_weather_json
@@ -18,10 +19,10 @@ Run it with a city name as an argument, e.g.:
 def print_forecast(weather):
     print("Forecast:")
     for day in weather["forecast"]:
-        print(f"{day['date']}: {day['description']}")
-        print(f"  Temp: {day['temperature_f']}F")
-        print(f"  Precipitation: {day['precipitation']}")
-        print(f"  Humidity: {day['humidity']}")
+        print(f" {day['date']}: {day['description']}")
+        print(f"    Temp: {day['temperature_f']}F")
+        print(f"    Precipitation: {day['precipitation']}")
+        print(f"    Humidity: {day['humidity']}")
 
 
 def print_summary(weather):
@@ -38,26 +39,19 @@ def print_summary(weather):
             trend.add("rising")
         elif day["temperature_f"] < last_temp:
             trend.add("falling")
+        elif day["temperature_f"] == last_temp:
+            trend.add("steady")
         last_temp = day["temperature_f"]
 
     # if the temperature is rising or falling, use that as the trend
     if len(trend) == 1:
         trend = trend.pop()
     else:
-        trend = None
+        trend = "???"
 
     print(f"The average temperature will be {avg_temp}F.")
     print(f"There will be {precip_days} days with a chance of rain.")
-
-    if trend:
-        print(f"The trend for the week is {trend}.")
-
-
-def print_current(weather):
-    print("Current weather:")
-    print(f"  Temp: {weather['current']['temperature_f']}F")
-    print(f"  Precipitation: {weather['current']['precipitation']}")
-    print(f"  Humidity: {weather['current']['humidity']}")
+    print(f"The trend for the week is {trend}.")
 
 
 def main():
@@ -66,7 +60,6 @@ def main():
     args = parser.parse_args()
     weather = get_weather_json(args.city)
     if weather:
-        print_current(weather)
         print_forecast(weather)
         print_summary(weather)
     else:

@@ -23,14 +23,14 @@ mock_data = [
             {
                 "date": "2022-05-03",
                 "description": "cloudy",
-                "temperature_f": 52,
+                "temperature_f": 61,
                 "precipitation": 0,
                 "humidity": 0.80,
             },
             {
                 "date": "2022-05-04",
                 "description": "showers",
-                "temperature_f": 53,
+                "temperature_f": 60,
                 "precipitation": 0.4,
                 "humidity": 0.82,
             },
@@ -44,7 +44,7 @@ mock_data = [
         ],
     },
     {
-        "city": "New York",
+        "city": "NYC",
         "current": {
             "description": "clear sky",
             "temperature_f": 68,
