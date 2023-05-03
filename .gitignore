@@ -1,3 +1,5 @@
 /.quarto/
 _site/
 *.pyc
+.ipynb_checkpoints
+.vscode/

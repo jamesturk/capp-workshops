@@ -11,7 +11,10 @@ How many bugs could it possibly have?
 
 Run it with a city name as an argument, e.g.:
 
+    python3 main.py Chicago
     python3 main.py Seattle
+    python3 main.py NYC
+    python3 main.py Paris (this one should print an error)
 
 """
 
@@ -43,7 +46,7 @@ def print_summary(weather):
             trend.add("steady")
         last_temp = day["temperature_f"]
 
-    # if the temperature is rising or falling, use that as the trend
+    # if trend is consistent, display it, otherwise ???
     if len(trend) == 1:
         trend = trend.pop()
     else:
