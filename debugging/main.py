@@ -3,6 +3,17 @@ import argparse
 from statistics import mean
 from weather import get_weather_json
 
+"""
+A simple script to get the weather for a city and print it out.
+
+How many bugs could it possibly have?
+
+Run it with a city name as an argument, e.g.:
+
+    python3 main.py Seattle
+
+"""
+
 
 def print_forecast(weather):
     print("Forecast:")
@@ -19,8 +30,27 @@ def print_summary(weather):
     # count days with chance of rain > 10%
     precip_days = len([day for day in forecast if day["precipitation"] > 10])
 
+    # figure out if the temperature is rising or falling monotonically
+    last_temp = 0
+    trend = set()
+    for day in forecast:
+        if day["temperature_f"] > last_temp:
+            trend.add("rising")
+        elif day["temperature_f"] < last_temp:
+            trend.add("falling")
+        last_temp = day["temperature_f"]
+
+    # if the temperature is rising or falling, use that as the trend
+    if len(trend) == 1:
+        trend = trend.pop()
+    else:
+        trend = None
+
     print(f"The average temperature will be {avg_temp}F.")
     print(f"There will be {precip_days} days with a chance of rain.")
+
+    if trend:
+        print(f"The trend for the week is {trend}."")
 
 
 def print_current(weather):
