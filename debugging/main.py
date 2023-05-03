@@ -50,7 +50,7 @@ def print_summary(weather):
     print(f"There will be {precip_days} days with a chance of rain.")
 
     if trend:
-        print(f"The trend for the week is {trend}."")
+        print(f"The trend for the week is {trend}.")
 
 
 def print_current(weather):
