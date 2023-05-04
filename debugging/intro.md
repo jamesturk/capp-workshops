@@ -104,7 +104,11 @@ This will start the debugger and pause execution at the first line of your progr
 * `p` - print the value of a variable
 * `q` - quit the debugger
 
-### Demo
+#### PDB Demo
+
+```
+$ python -m pdb debugging/example1.py
+```
 
 ### Breakpoints
 
@@ -118,7 +122,7 @@ breakpoint()
 
 This will pause execution at that point and allow you to step through your code.
 
-#### `pdb` demo
+#### Breakpoint Demo
 
 ### VSCode Debugger
 
@@ -139,12 +143,13 @@ Here's an example `launch.json` file:
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: Current File",   // this is the name that will show up in the dropdown
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "${file}",             // this tells VSCode to run the current file
+            "arguments": ["arg1", "arg2"],    // if your program requires arguments you'll need to add this
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true                  // this tells VSCode to not step into external libraries
         }
     ]
 }
