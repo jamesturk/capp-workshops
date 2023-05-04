@@ -96,9 +96,9 @@ This will start the debugger and pause execution at the first line of your progr
 
 ### PDB Commands
 
-* `n` - step to the next line
-* `s` - step into a function call
-* `r` - continue until the current function returns
+* `n` - step to the next line (aka step over)
+* `s` - step into a function call (aka step into)
+* `r` - continue until the current function returns (aka step out)
 * `c` - continue until the next breakpoint
 * `l` - list the current line of code
 * `p` - print the value of a variable

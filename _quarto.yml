@@ -7,6 +7,7 @@ website:
     left:
       - intermediate-git.qmd
       - intermediate-python.qmd
+      - debugging/intro.md
 
 format:
   html:
