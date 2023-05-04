@@ -8,8 +8,14 @@ Before we get into the tools, let's talk about some techniques for debugging you
 
 ### Print Statements
 
-`print` statements are particularly useful in interpreted
-languages like Python. They allow you to see the state of your program at any point in time.
+`print` statements are particularly useful in interpreted languages like Python.
+They allow you to see the state of your program at any point in time.
+
+Downsides:
+* You have to add them to your code, run it, and remember to remove them.
+* They can clutter up your code & output, making it harder to read.
+* Debugging code in a loop or frequently-called function can be tedious with a ton of print output to sift through.
+* You have to know before running your program what you want to see, if you discover a problem later you have to add more print statements and run it again.
 
 
 ### Logging Statements
@@ -20,11 +26,15 @@ By adding logging statements at different levels of severity you can adjust at r
 
 [Python logging documentation](https://docs.python.org/3/howto/logging.html).
 
+These can help with some of the clutter, but are still not an ideal situation.
+
 ### Rubber Duck Debugging
 
 This technique is named after a story in the book _The Pragmatic Programmer_ by Andrew Hunt and David Thomas.  The story goes that a programmer would carry around a rubber duck and explain their code to the duck.  Often, in the process of explaining the code, the programmer would realize what was wrong.
 
 Explaining your code to yourself aloud, or a peer can help identify flaws in your logic.
+
+This helps build an important skill & should not be overlooked, but obviously won't solve all your problems.
 
 ### ChatGPT Debugging
 
@@ -66,13 +76,15 @@ def word_count(text, count_dict=None):
 
 I also made a small change to the default value of count_dict. Using a mutable object like a dictionary as a default argument value is not recommended, as it can lead to unexpected behavior. Instead, use None as the default value and initialize the dictionary inside the function if it's not provided.
 
+Pretty great at things like this, but remember to verify the code it writes and watch out for API hallucinations.
+
 ## Interactive Debugging
 
 The focus of today is going to be on interactive debugging.  This is a technique that allows you to step through your code and see the state of your program at each step. Used properly, this can save you a lot of time and frustration and help you understand your code at a deeper level.
 
 The interactive debugger we'll be using today is called `pdb`.  It's a command line debugger that comes with Python.
 
-`pdb` may not be the most user friendly debugger, but it's very powerful and it's always available.  It's interface is similar to the `gdb` debugger (originally for C and C++ programs) which most other debuggers are based on as well.
+`pdb` may not be the most user friendly debugger, but it's very powerful and it's always available.  (Meaning it comes pre-installed and will be useful if you find yourself debugging on a server or other environment where you can't rely on VSCode.) It's interface is similar to the `gdb` debugger (originally for C and C++ programs) which most other debuggers are based on as well.
 
 To run `pdb` against your program, you can use the `-m` flag to run it as a module.
 
@@ -91,6 +103,8 @@ This will start the debugger and pause execution at the first line of your progr
 * `l` - list the current line of code
 * `p` - print the value of a variable
 * `q` - quit the debugger
+
+### Demo
 
 ### Breakpoints
 
