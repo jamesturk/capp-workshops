@@ -202,7 +202,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="print-statements" class="level3">
 <h3 class="anchored" data-anchor-id="print-statements">Print Statements</h3>
 <p><code>print</code> statements are particularly useful in interpreted languages like Python. They allow you to see the state of your program at any point in time.</p>
-<p>Downsides: * You have to add them to your code, run it, and remember to remove them. * They can clutter up your code &amp; output, making it harder to read. * Debugging code in a loop or frequently-called function can be tedious with a ton of print output to sift through. * You have to know before running your program what you want to see, if you discover a problem later you have to add more print statements and run it again.</p>
+<p>Downsides:</p>
+<ul>
+<li>You have to add them to your code, run it, and remember to remove them.</li>
+<li>They can clutter up your code &amp; output, making it harder to read.</li>
+<li>Debugging code in a loop or frequently-called function can be tedious with a ton of print output to sift through.</li>
+<li>You have to know before running your program what you want to see, if you discover a problem later you have to add more print statements and run it again.</li>
+</ul>
 </section>
 <section id="logging-statements" class="level3">
 <h3 class="anchored" data-anchor-id="logging-statements">Logging Statements</h3>
@@ -257,13 +263,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="pdb-commands" class="level3">
 <h3 class="anchored" data-anchor-id="pdb-commands">PDB Commands</h3>
 <ul>
-<li><code>n</code> - step to the next line (aka step over)</li>
-<li><code>s</code> - step into a function call (aka step into)</li>
-<li><code>r</code> - continue until the current function returns (aka step out)</li>
-<li><code>c</code> - continue until the next breakpoint</li>
-<li><code>l</code> - list the current line of code</li>
-<li><code>p</code> - print the value of a variable</li>
-<li><code>q</code> - quit the debugger</li>
+<li><code>n</code>ext - step to next line (aka step over)</li>
+<li><code>s</code>tep - step into a function call (aka step into)</li>
+<li><code>r</code>eturn - continue until the current function returns (aka step out)</li>
+<li><code>c</code>ontinue - continue until the next breakpoint</li>
+<li><code>l</code>ist - list the current line of code</li>
+<li><code>p</code>rint - print the value of a variable</li>
+<li><code>q</code>uit - quit the debugger</li>
+<li><code>?</code>/<code>help</code> - show a list of commands</li>
 </ul>
 <section id="pdb-demo" class="level4">
 <h4 class="anchored" data-anchor-id="pdb-demo">PDB Demo</h4>
