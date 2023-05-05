@@ -12,6 +12,7 @@ Before we get into the tools, let's talk about some techniques for debugging you
 They allow you to see the state of your program at any point in time.
 
 Downsides:
+
 * You have to add them to your code, run it, and remember to remove them.
 * They can clutter up your code & output, making it harder to read.
 * Debugging code in a loop or frequently-called function can be tedious with a ton of print output to sift through.
@@ -96,13 +97,14 @@ This will start the debugger and pause execution at the first line of your progr
 
 ### PDB Commands
 
-* `n` - step to the next line (aka step over)
-* `s` - step into a function call (aka step into)
-* `r` - continue until the current function returns (aka step out)
-* `c` - continue until the next breakpoint
-* `l` - list the current line of code
-* `p` - print the value of a variable
-* `q` - quit the debugger
+* `n`ext - step to next line (aka step over)
+* `s`tep - step into a function call (aka step into)
+* `r`eturn - continue until the current function returns (aka step out)
+* `c`ontinue - continue until the next breakpoint
+* `l`ist - list the current line of code
+* `p`rint - print the value of a variable
+* `q`uit - quit the debugger
+* `?`/`help` - show a list of commands
 
 #### PDB Demo
 
