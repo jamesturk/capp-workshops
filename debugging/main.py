@@ -30,21 +30,31 @@ def print_forecast(weather):
 
 def print_summary(weather):
     forecast = weather["forecast"]
-    avg_temp = mean([day["temperature_f"] for day in forecast])
+    # BUG #2: avg_temp did not properly handle days with no temperature
+    avg_temp = mean([day["temperature_f"] for day in forecast if day["temperature_f"]])
     # count days with chance of rain > 10%
-    precip_days = len([day for day in forecast if day["precipitation"] > 10])
+    # BUG #3: precip days are counted incorrectly, because the precipitation is 0-1 not 0-100
+    precip_days = len([day for day in forecast if day["precipitation"] > .1])
 
     # figure out if the temperature is rising or falling monotonically
-    last_temp = 0
+    last_temp = None
     trend = set()
     for day in forecast:
-        if day["temperature_f"] > last_temp:
+        temp_f = day["temperature_f"]
+        # BUG #4: temperature trend is not calculated correctly because
+        # last_temp is not initialized to the first day's temperature
+        if not last_temp:
+            last_temp = temp_f
+            continue
+        if not temp_f or not last_temp:
+            continue
+        elif temp_f > last_temp:
             trend.add("rising")
-        elif day["temperature_f"] < last_temp:
+        elif temp_f < last_temp:
             trend.add("falling")
-        elif day["temperature_f"] == last_temp:
+        elif temp_f == last_temp:
             trend.add("steady")
-        last_temp = day["temperature_f"]
+        last_temp = temp_f
 
     # if trend is consistent, display it, otherwise ???
     if len(trend) == 1:
@@ -62,6 +72,8 @@ def main():
     parser.add_argument("city", help="the city to get the weather for")
     args = parser.parse_args()
     weather = get_weather_json(args.city)
+    # BUG #1: weather is a string, not a dict
+    weather = json.loads(weather)
     if weather:
         print_forecast(weather)
         print_summary(weather)
